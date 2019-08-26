@@ -1,10 +1,10 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-
 const db = require('./database/dbConfig.js');
 const Users = require('./users/users-model.js');
-
+const restricted = require('./database/auth/restricted-middleware');
+const bcrypt = require('bcryptjs');
 const server = express();
 
 server.use(helmet());
@@ -17,6 +17,12 @@ server.get('/', (req, res) => {
 
 server.post('/api/register', (req, res) => {
   let user = req.body;
+
+  const hash = bcrypt.hashSync(user.password, 12);
+
+  user.password = hash
+
+  // sets the users password into a hash
 
   Users.add(user)
     .then(saved => {
@@ -33,7 +39,8 @@ server.post('/api/login', (req, res) => {
   Users.findBy({ username })
     .first()
     .then(user => {
-      if (user) {
+      // THisi will take the password guess and the password hash stored in the database, to validate the data
+      if (user && bcrypt.compareSync(password, user.password)) {
         res.status(200).json({ message: `Welcome ${user.username}!` });
       } else {
         res.status(401).json({ message: 'Invalid Credentials' });
@@ -44,7 +51,7 @@ server.post('/api/login', (req, res) => {
     });
 });
 
-server.get('/api/users', (req, res) => {
+server.get('/api/users', restricted, (req, res) => {
   Users.find()
     .then(users => {
       res.json(users);
