@@ -9,4 +9,4 @@ module.exports = function restricted(req, res, next){
     }else{
         res.status(400).json({message : 'Please provide valid Credentialls'})
     }
-}
+} 
